@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CUPRO DUNK 2026 — Live Dashboard</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap');
+:root {
+  --orange:#F26522; --black:#0A0A0A; --gray-dark:#141414;
+  --gray-mid:#1E1E1E; --gray-light:#2A2A2A; --border:rgba(255,255,255,0.07);
+  --text:#FFFFFF; --text-muted:rgba(255,255,255,0.4); --success:#1DB97E; --danger:#E24B4A;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--black);color:var(--text);font-family:'Barlow',sans-serif;}
+
+/* TOP BAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:64px;background:var(--gray-dark);border-bottom:2px solid var(--orange);}
+.topbar-logo{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;letter-spacing:2px;text-transform:uppercase;}
+.topbar-logo span{color:var(--orange);}
+.topbar-clock{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--orange);letter-spacing:2px;}
+.topbar-nav{display:flex;gap:6px;}
+.nav-btn{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:6px 14px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:all 0.2s;}
+.nav-btn.active{background:var(--orange);border-color:var(--orange);color:#fff;}
+.nav-btn:hover{border-color:var(--orange);color:var(--orange);}
+
+/* MAIN */
+.main{height:calc(100vh - 64px);overflow:hidden;position:relative;}
+.screen{position:absolute;inset:0;padding:24px 32px;display:none;overflow:hidden;}
+.screen.active{display:flex;flex-direction:column;}
+.screen-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:var(--orange);margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.screen-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* CLASSIFICHE */
+.gironi-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;flex:1;}
+.girone-card{background:var(--gray-mid);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.girone-header{background:var(--orange);padding:10px 16px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:2px;}
+.girone-table{width:100%;border-collapse:collapse;}
+.girone-table th{padding:8px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);text-align:left;border-bottom:1px solid var(--border);}
+.girone-table td{padding:9px 12px;font-size:14px;border-bottom:1px solid rgba(255,255,255,0.04);}
+.girone-table tr:last-child td{border-bottom:none;}
+.girone-table tr:first-child td{background:rgba(242,101,34,0.08);}
+.pos-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:700;background:var(--gray-light);}
+.pos-badge.gold{background:#C9952A;color:#fff;}
+.pos-badge.silver{background:#7A7A7A;color:#fff;}
+.w-badge{color:var(--success);font-weight:700;}
+.l-badge{color:var(--text-muted);}
+
+/* CALENDARIO */
+.cal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:1;overflow-y:auto;}
+.cal-sera{background:var(--gray-mid);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.cal-sera-header{background:var(--gray-light);padding:10px 16px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;justify-content:space-between;}
+.cal-sera-header .fase-tag{font-size:11px;padding:2px 8px;border-radius:4px;background:rgba(242,101,34,0.2);color:var(--orange);}
+.cal-row{display:flex;align-items:center;padding:8px 16px;border-bottom:1px solid rgba(255,255,255,0.04);gap:10px;}
+.cal-row:last-child{border-bottom:none;}
+.cal-row.played{opacity:0.6;}
+.cal-time{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--orange);width:46px;flex-shrink:0;}
+.cal-campo{font-size:11px;color:var(--text-muted);width:60px;flex-shrink:0;}
+.cal-teams{flex:1;font-size:13px;}
+.cal-teams .vs{color:var(--text-muted);font-size:11px;margin:0 5px;}
+.cal-score{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;white-space:nowrap;}
+.cal-score .winner{color:var(--orange);}
+.cal-tipo{font-size:10px;padding:2px 6px;border-radius:3px;background:rgba(255,255,255,0.06);color:var(--text-muted);flex-shrink:0;}
+.cal-tipo.crossover{background:rgba(29,185,126,0.1);color:var(--success);}
+
+/* TABELLONE */
+.bracket-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.bracket{display:flex;gap:0;align-items:center;width:100%;}
+.bracket-round{display:flex;flex-direction:column;justify-content:space-around;flex:1;}
+.bracket-round-title{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);text-align:center;margin-bottom:8px;}
+.bracket-match{background:var(--gray-mid);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:4px 6px;}
+.bracket-team{padding:7px 10px;font-size:12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+.bracket-team:last-child{border-bottom:none;}
+.bracket-team.winner{background:rgba(242,101,34,0.12);font-weight:600;}
+.bracket-team .score{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--orange);}
+.bracket-connector{width:20px;height:2px;background:var(--border);}
+
+/* TOP SCORER */
+.scorer-wrap{flex:1;display:flex;flex-direction:column;gap:8px;overflow-y:auto;}
+.scorer-row{display:flex;align-items:center;gap:14px;background:var(--gray-mid);border:1px solid var(--border);border-radius:10px;padding:12px 18px;}
+.scorer-rank{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text-muted);width:32px;text-align:center;}
+.scorer-rank.top{color:var(--orange);}
+.scorer-name{flex:1;}
+.scorer-name strong{font-size:16px;display:block;}
+.scorer-name span{font-size:12px;color:var(--text-muted);}
+.scorer-pts{font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:900;color:var(--orange);}
+.scorer-pts-label{font-size:11px;color:var(--text-muted);}
+.scorer-bar{flex:2;height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;}
+.scorer-bar-fill{height:100%;border-radius:3px;background:var(--orange);}
+
+/* FOTO GALLERY — Ken Burns effect */
+.gallery-wrap{flex:1;position:relative;overflow:hidden;border-radius:12px;}
+.gallery-slide{position:absolute;inset:0;opacity:0;transition:opacity 1.2s ease;}
+.gallery-slide.active{opacity:1;}
+.gallery-slide img{width:100%;height:100%;object-fit:cover;}
+.gallery-overlay{position:absolute;bottom:0;left:0;right:0;padding:20px 28px;background:linear-gradient(transparent, rgba(0,0,0,0.8));}
+.gallery-caption{font-size:16px;color:#fff;font-weight:500;}
+.gallery-time{font-size:12px;color:rgba(255,255,255,0.5);margin-top:3px;}
+.gallery-dots{position:absolute;bottom:12px;right:20px;display:flex;gap:5px;}
+.gallery-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.3);}
+.gallery-dot.active{background:var(--orange);}
+@keyframes kenburns{0%{transform:scale(1) translate(0,0);}100%{transform:scale(1.08) translate(-1%,-1%);}}
+.gallery-slide.active img{animation:kenburns 8s ease-in-out forwards;}
+
+/* LIVE INDICATOR */
+.live-dot{display:inline-flex;align-items:center;gap:6px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:1px;}
+.live-dot::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--danger);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.8);}}
+
+/* TICKER */
+.ticker{height:36px;background:var(--gray-dark);border-top:1px solid var(--border);display:flex;align-items:center;overflow:hidden;position:fixed;bottom:0;left:0;right:0;}
+.ticker-label{background:var(--orange);padding:0 14px;height:100%;display:flex;align-items:center;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;flex-shrink:0;}
+.ticker-track{display:flex;animation:ticker 30s linear infinite;white-space:nowrap;}
+.ticker-item{padding:0 40px;font-size:13px;color:var(--text-muted);}
+.ticker-item strong{color:#fff;}
+@keyframes ticker{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+
+/* NO DATA */
+.no-data{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:10px;color:var(--text-muted);}
+.no-data .icon{font-size:40px;opacity:0.3;}
+.no-data p{font-size:14px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">CUPRO <span>DUNK</span> 2026</div>
+  <div class="topbar-nav">
+    <button class="nav-btn active" onclick="showScreen('classifiche')">Classifiche</button>
+    <button class="nav-btn" onclick="showScreen('calendario')">Calendario</button>
+    <button class="nav-btn" onclick="showScreen('tabellone')">Tabellone</button>
+    <button class="nav-btn" onclick="showScreen('scorer')">Top Scorer</button>
+    <button class="nav-btn" onclick="showScreen('foto')">Gallery</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <div class="live-dot">Live</div>
+    <div class="topbar-clock" id="clock">--:--</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- CLASSIFICHE -->
+  <div class="screen active" id="screen-classifiche">
+    <div class="screen-title">🏆 Classifiche Gironi</div>
+    <div class="gironi-grid" id="gironiGrid">
+      <div class="no-data"><div class="icon">📊</div><p>In attesa dei risultati...</p></div>
+    </div>
+  </div>
+
+  <!-- CALENDARIO -->
+  <div class="screen" id="screen-calendario">
+    <div class="screen-title">📅 Calendario & Risultati</div>
+    <div class="cal-grid" id="calGrid">
+      <div class="no-data"><div class="icon">📅</div><p>Caricamento calendario...</p></div>
+    </div>
+  </div>
+
+  <!-- TABELLONE -->
+  <div class="screen" id="screen-tabellone">
+    <div class="screen-title">🎯 Tabellone Finale</div>
+    <div class="bracket-wrap" id="bracketWrap">
+      <div class="no-data"><div class="icon">🎯</div><p>Il tabellone si compilerà al termine dei gironi</p></div>
+    </div>
+  </div>
+
+  <!-- SCORER -->
+  <div class="screen" id="screen-scorer">
+    <div class="screen-title">🏀 Top Scorer</div>
+    <div class="scorer-wrap" id="scorerWrap">
+      <div class="no-data"><div class="icon">🏀</div><p>Nessun dato scorer ancora disponibile</p></div>
+    </div>
+  </div>
+
+  <!-- FOTO -->
+  <div class="screen" id="screen-foto">
+    <div class="screen-title">📸 Gallery Live</div>
+    <div class="gallery-wrap" id="galleryWrap">
+      <div class="no-data"><div class="icon">📸</div><p>Le foto appariranno qui durante il torneo</p></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="ticker">
+  <div class="ticker-label">🏀 Live</div>
+  <div class="ticker-track" id="tickerTrack">
+    <div class="ticker-item">Benvenuti al <strong>Cupro Dunk 2026</strong> — Polisportivo Monti — 17/19 Giugno 2026</div>
+    <div class="ticker-item"><strong>#CuproDunk</strong> &nbsp; <strong>#GameOn</strong></div>
+    <div class="ticker-item">Benvenuti al <strong>Cupro Dunk 2026</strong> — Polisportivo Monti — 17/19 Giugno 2026</div>
+    <div class="ticker-item"><strong>#CuproDunk</strong> &nbsp; <strong>#GameOn</strong></div>
+  </div>
+</div>
+
+<script>
+// ================================================================
+// INCOLLA QUI L'URL DEL TUO APPS SCRIPT DASHBOARD
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwHi-Qk3CB4PcgOa9TQ2eZvAS10RPOahIyb5S5INYyLeNJcXEhjAE9txpIHVZqYGZFgCw/exec';
+// ================================================================
+
+let currentData = {};
+let autoRotate = true;
+let rotateTimer = null;
+const screens = ['classifiche','calendario','tabellone','scorer','foto'];
+let currentScreenIdx = 0;
+let galleryIdx = 0;
+let galleryTimer = null;
+
+// ── CLOCK ────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── NAVIGATION ───────────────────────────────────────────
+function showScreen(name, manual) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    if (b.textContent.toLowerCase().includes(name.substring(0,4))) b.classList.add('active');
+  });
+  currentScreenIdx = screens.indexOf(name);
+  if (manual) { clearTimeout(rotateTimer); autoRotate = false; setTimeout(() => autoRotate = true, 30000); }
+  renderScreen(name);
+}
+
+function autoRotateScreens() {
+  if (autoRotate) {
+    currentScreenIdx = (currentScreenIdx + 1) % screens.length;
+    showScreen(screens[currentScreenIdx]);
+  }
+  rotateTimer = setTimeout(autoRotateScreens, 12000);
+}
+setTimeout(autoRotateScreens, 12000);
+
+// ── DATA FETCH ───────────────────────────────────────────
+function fetchData() {
+  if (APPS_SCRIPT_URL === 'INCOLLA_QUI_IL_TUO_APPS_SCRIPT_DASHBOARD_URL') {
+    useDemoData();
+    return;
+  }
+  fetch(APPS_SCRIPT_URL + '?action=all')
+    .then(r => r.json())
+    .then(data => { currentData = data; renderScreen(screens[currentScreenIdx]); updateTicker(); })
+    .catch(() => useDemoData());
+}
+
+function useDemoData() {
+  currentData = {
+    classifiche: {
+      A: [
+        {nome:'Squadra A1',girone:'A',g:3,v:3,s:0,pf:72,ps:48},
+        {nome:'Squadra A2',girone:'A',g:3,v:2,s:1,pf:65,ps:55},
+        {nome:'Squadra A3',girone:'A',g:3,v:1,s:2,pf:58,ps:62},
+        {nome:'Squadra A4',girone:'A',g:3,v:0,s:3,pf:44,ps:74},
+      ],
+      B: [
+        {nome:'Squadra B1',girone:'B',g:3,v:3,s:0,pf:68,ps:44},
+        {nome:'Squadra B2',girone:'B',g:3,v:2,s:1,pf:61,ps:52},
+        {nome:'Squadra B3',girone:'B',g:3,v:1,s:2,pf:55,ps:65},
+        {nome:'Squadra B4',girone:'B',g:3,v:0,s:3,pf:40,ps:63},
+      ],
+      C: [
+        {nome:'Squadra C1',girone:'C',g:2,v:2,s:0,pf:46,ps:30},
+        {nome:'Squadra C2',girone:'C',g:2,v:1,s:1,pf:40,ps:38},
+        {nome:'Squadra C3',girone:'C',g:2,v:1,s:1,pf:36,ps:40},
+        {nome:'Squadra C4',girone:'C',g:2,v:0,s:2,pf:28,ps:42},
+      ],
+      D: [
+        {nome:'Squadra D1',girone:'D',g:1,v:1,s:0,pf:24,ps:18},
+        {nome:'Squadra D2',girone:'D',g:1,v:0,s:1,pf:18,ps:24},
+        {nome:'Squadra D3',girone:'D',g:0,v:0,s:0,pf:0,ps:0},
+        {nome:'Squadra D4',girone:'D',g:0,v:0,s:0,pf:0,ps:0},
+      ],
+    },
+    scorer: [
+      {nome:'M. Rossi',squadra:'Squadra A1',pt:34},
+      {nome:'L. Bianchi',squadra:'Squadra B1',pt:29},
+      {nome:'F. Verdi',squadra:'Squadra A2',pt:26},
+      {nome:'G. Neri',squadra:'Squadra C1',pt:22},
+      {nome:'A. Bruno',squadra:'Squadra B2',pt:19},
+    ],
+    foto: [],
+    calendario: [],
+    tabellone: [],
+  };
+  renderScreen(screens[currentScreenIdx]);
+}
+
+setInterval(fetchData, 30000);
+fetchData();
+
+// ── RENDER ───────────────────────────────────────────────
+function renderScreen(name) {
+  if (name === 'classifiche') renderClassifiche();
+  if (name === 'calendario') renderCalendario();
+  if (name === 'tabellone') renderTabellone();
+  if (name === 'scorer') renderScorer();
+  if (name === 'foto') renderFoto();
+}
+
+function renderClassifiche() {
+  const cl = currentData.classifiche;
+  if (!cl) return;
+  const grid = document.getElementById('gironiGrid');
+  grid.innerHTML = '';
+  ['A','B','C','D'].forEach(g => {
+    const squadre = cl[g] || [];
+    const card = document.createElement('div');
+    card.className = 'girone-card';
+    const rows = squadre.map((s,i) => `
+      <tr>
+        <td><span class="pos-badge ${i===0?'gold':i===1?'silver':''}">${i+1}</span></td>
+        <td><strong>${s.nome}</strong></td>
+        <td style="text-align:center">${s.g}</td>
+        <td style="text-align:center"><span class="w-badge">${s.v}V</span></td>
+        <td style="text-align:center"><span class="l-badge">${s.s}S</span></td>
+        <td style="text-align:center">${s.pf}</td>
+        <td style="text-align:center;color:${(s.pf-s.ps)>=0?'#1DB97E':'#E24B4A'}">${s.pf-s.ps>=0?'+':''}${s.pf-s.ps}</td>
+      </tr>`).join('');
+    card.innerHTML = `
+      <div class="girone-header">Girone ${g}</div>
+      <table class="girone-table">
+        <thead><tr>
+          <th>#</th><th>Squadra</th><th>G</th><th>V</th><th>S</th><th>PF</th><th>+/-</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    grid.appendChild(card);
+  });
+}
+
+function renderCalendario() {
+  const cal = currentData.calendario;
+  const grid = document.getElementById('calGrid');
+  if (!cal || cal.length === 0) { grid.innerHTML = '<div class="no-data"><div class="icon">📅</div><p>Calendario non ancora disponibile</p></div>'; return; }
+  grid.innerHTML = '';
+  [1,2,3].forEach(sera => {
+    const partite = cal.filter(p => p.sera === sera);
+    if (!partite.length) return;
+    const card = document.createElement('div');
+    card.className = 'cal-sera';
+    const seraLabel = sera === 1 ? 'Sera 1 — 17 Giugno' : sera === 2 ? 'Sera 2 — 18 Giugno' : 'Giorno 3 — 19 Giugno';
+    const rows = partite.map(p => {
+      const played = p.risultato;
+      const scoreHtml = played ?
+        `<div class="cal-score"><span class="${p.risultato.pCasa > p.risultato.pTras ? 'winner' : ''}">${p.risultato.pCasa}</span> — <span class="${p.risultato.pTras > p.risultato.pCasa ? 'winner' : ''}">${p.risultato.pTras}</span></div>` : '';
+      return `<div class="cal-row ${played?'played':''}">
+        <div class="cal-time">${p.orario}</div>
+        <div class="cal-campo">Campo ${p.campo}</div>
+        <div class="cal-teams">${p.casa} <span class="vs">vs</span> ${p.trasferta}</div>
+        ${scoreHtml}
+        <div class="cal-tipo ${p.tipo==='Crossover'?'crossover':''}">${p.tipo}</div>
+      </div>`;
+    }).join('');
+    card.innerHTML = `<div class="cal-sera-header">${seraLabel}</div>${rows}`;
+    grid.appendChild(card);
+  });
+}
+
+function renderTabellone() {
+  const tab = currentData.tabellone;
+  const wrap = document.getElementById('bracketWrap');
+  if (!tab || tab.length === 0) { wrap.innerHTML = '<div class="no-data"><div class="icon">🎯</div><p>Il tabellone si compilerà al termine dei gironi</p></div>'; return; }
+  const ottavi = tab.filter(p => p.tipo && p.tipo.includes('Ottavi'));
+  const semi = tab.filter(p => p.fase === 'Semifinale');
+  const finale = tab.filter(p => p.fase.includes('Finale'));
+  const makeMatch = (p) => {
+    const r = p.risultato;
+    return `<div class="bracket-match">
+      <div class="bracket-team ${r&&r.pCasa>r.pTras?'winner':''}">${p.casa||'TBD'} ${r?`<span class="score">${r.pCasa}</span>`:''}</div>
+      <div class="bracket-team ${r&&r.pTras>r.pCasa?'winner':''}">${p.trasferta||'TBD'} ${r?`<span class="score">${r.pTras}</span>`:''}</div>
+    </div>`;
+  };
+  wrap.innerHTML = `
+    <div class="bracket">
+      <div class="bracket-round">
+        <div class="bracket-round-title">Ottavi</div>
+        ${ottavi.map(makeMatch).join('')}
+      </div>
+      <div class="bracket-round">
+        <div class="bracket-round-title">Semifinali</div>
+        ${semi.map(makeMatch).join('')}
+      </div>
+      <div class="bracket-round">
+        <div class="bracket-round-title">Finali</div>
+        ${finale.map(makeMatch).join('')}
+      </div>
+    </div>`;
+}
+
+function renderScorer() {
+  const sc = currentData.scorer;
+  const wrap = document.getElementById('scorerWrap');
+  if (!sc || sc.length === 0) { wrap.innerHTML = '<div class="no-data"><div class="icon">🏀</div><p>Nessun dato disponibile</p></div>'; return; }
+  const max = sc[0].pt || 1;
+  wrap.innerHTML = sc.map((s,i) => `
+    <div class="scorer-row">
+      <div class="scorer-rank ${i<3?'top':''}">${i+1}</div>
+      <div class="scorer-name"><strong>${s.nome}</strong><span>${s.squadra}</span></div>
+      <div class="scorer-bar"><div class="scorer-bar-fill" style="width:${(s.pt/max*100)}%"></div></div>
+      <div style="text-align:right;"><div class="scorer-pts">${s.pt}</div><div class="scorer-pts-label">punti</div></div>
+    </div>`).join('');
+}
+
+function renderFoto() {
+  const foto = currentData.foto;
+  const wrap = document.getElementById('galleryWrap');
+  if (!foto || foto.length === 0) { wrap.innerHTML = '<div class="no-data"><div class="icon">📸</div><p>Le foto appariranno qui durante il torneo</p></div>'; return; }
+  clearInterval(galleryTimer);
+  wrap.innerHTML = foto.map((f,i) => `
+    <div class="gallery-slide ${i===0?'active':''}" id="slide_${i}">
+      <img src="${f.url}" alt="${f.didascalia}" loading="lazy">
+      <div class="gallery-overlay">
+        <div class="gallery-caption">${f.didascalia}</div>
+        <div class="gallery-time">${f.ora}</div>
+      </div>
+    </div>`).join('') +
+    `<div class="gallery-dots">${foto.map((_,i) => `<div class="gallery-dot ${i===0?'active':''}" id="dot_${i}"></div>`).join('')}</div>`;
+  galleryIdx = 0;
+  galleryTimer = setInterval(() => {
+    const slides = wrap.querySelectorAll('.gallery-slide');
+    const dots = wrap.querySelectorAll('.gallery-dot');
+    slides[galleryIdx].classList.remove('active');
+    dots[galleryIdx].classList.remove('active');
+    galleryIdx = (galleryIdx + 1) % slides.length;
+    slides[galleryIdx].classList.add('active');
+    dots[galleryIdx].classList.add('active');
+  }, 7000);
+}
+
+function updateTicker() {
+  const sc = currentData.scorer;
+  if (!sc || sc.length === 0) return;
+  const items = sc.slice(0,5).map(s => `<div class="ticker-item">🏀 <strong>${s.nome}</strong> (${s.squadra}) — ${s.pt} pt</div>`).join('');
+  const track = document.getElementById('tickerTrack');
+  track.innerHTML = items + items;
+}
+</script>
+</body>
+</html>
